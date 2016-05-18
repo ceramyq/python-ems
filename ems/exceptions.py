@@ -36,6 +36,13 @@ class ValidationException(EMSException):
     pass
 
 
+class RestrictionException(ValidationException):
+    """
+    Exceptions pertaining to user-defined restrictons for field values.
+    """
+    pass
+
+
 class XMLException(EMSException):
     """
     Exceptions pertaining to parsing of XML into objects.
