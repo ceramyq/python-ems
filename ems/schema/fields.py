@@ -150,7 +150,7 @@ class String(Field):
     def to_element(self, **kwds):
         return super(String, self).to_element(**kwds)
 
-    def parse(self):
+    def parse(self, element):
         pass
 
 
@@ -168,7 +168,7 @@ class Integer(Field):
     def to_element(self, **kwds):
         return super(Integer, self).to_element(**kwds)
 
-    def parse(self):
+    def parse(self, element):
         pass
 
 
@@ -188,7 +188,7 @@ class Float(Field):
     def to_element(self, **kwds):
         return super(Float, self).to_element(**kwds)
 
-    def parse(self):
+    def parse(self, element):
         pass
 
 
@@ -211,7 +211,7 @@ class Boolean(Field):
         elem.text = elem.text.lower()
         return elem
 
-    def parse(self):
+    def parse(self, element):
         pass
 
 
@@ -251,7 +251,7 @@ class Date(Field):
                 raise ValidationException('Cannot convert value %s to ISO '
                                           'datetime' % self.value)
 
-    def parse(self):
+    def parse(self, element):
         pass
 
 
@@ -281,7 +281,7 @@ class Choice(ComplexField):
 
         return elem
 
-    def parse(self):
+    def parse(self, element):
         pass
 
 
@@ -338,5 +338,5 @@ class Sequence(ComplexField):
 
         return elements
 
-    def parse(self):
+    def parse(self, element):
         pass
