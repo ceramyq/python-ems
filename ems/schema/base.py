@@ -172,7 +172,7 @@ class WebServiceObject(object):
         if root_element is None:
             root_element = etree.Element(self._schema_meta['tag'])
 
-        for field in six.iteritems(self._schema_fields):
+        for field in six.itervalues(self._schema_fields):
             if self._schema_meta['validate']:
                 field.validate()
 
@@ -189,12 +189,14 @@ class WebServiceObject(object):
             #   <a>2</a>
             # </attribute>
             if isinstance(children, list):
-                [root_elem.append(elem)
+                [root_element.append(elem)
                  for elem
                  in children]
 
             elif children is not None:
-                root_elem.append(children)
+                root_element.append(children)
+
+        return root_element
 
     def render(self, pretty=False):
         """
