@@ -22,6 +22,7 @@ from lxml import etree
 
 from ems.exceptions import SchemaException
 from ems.exceptions import ValidationException
+from ems.exceptions import XMLException
 
 from ems.schema import fields
 
@@ -70,7 +71,12 @@ def parse_fields(name, bases, dct):
     if '_SCHEMA_' not in dct:
         raise SchemaException('No _SCHEMA_ attribute found for %s' % name)
 
+    # Holds the fields from the schema definition
     schema_fields = {}
+
+    # Holds a reverse lookup to the fields from their tag names. Used when
+    # parsing an XML into an object.
+    field_lookup = {}
 
     for k, v in six.iteritems(dct['_SCHEMA_']):
         if not isinstance(v, dict):
@@ -89,6 +95,9 @@ def parse_fields(name, bases, dct):
 
         # Get field class from factory helper method.
         schema_fields[k] = fields.factory(field_type, **v)
+
+        # Lookup for the XML tag -> attribute name
+        field_lookup[v['tag']] = k
 
         # Create new property functions for the field values.
         # Functions are wrapped to force 'k' to be evaluated now. Otherwise k
@@ -110,6 +119,7 @@ def parse_fields(name, bases, dct):
     # Remove the original schema definition and add the new one
     del dct['_SCHEMA_']
     dct['_schema_fields'] = schema_fields
+    dct['_field_lookup'] = field_lookup
 
 
 class WebServiceMeta(type):
@@ -206,8 +216,28 @@ class WebServiceObject(object):
         return etree.tostring(element, pretty_print=pretty)
 
     @classmethod
-    def parse(cls, strict=True):
+    def parse(cls, root_element, strict=True):
         """
         Returns a new instance of the class from an XML.
         """
-        raise NotImplementedError('')
+        # New instance of myself to return
+        obj = cls()
+
+        for elem in root_element:
+            attr_name = cls._field_lookup.get(elem.tag, None)
+            if attr_name is None and strict:
+                raise XMLException('Unexpected element: %s' % attr_name)
+            elif attr_name is None:
+                continue
+
+            # Field objects should provide a parse method
+            obj._schema_fields[attr_name].parse(elem)
+
+        return obj
+
+    @classmethod
+    def from_file(cls, filename, strict=True):
+        tree = etree.parse(filename)
+        root = tree.getroot()
+
+        return cls.parse(root, strict=strict)
