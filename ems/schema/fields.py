@@ -235,7 +235,7 @@ class Date(Field):
                     raise ValidationException('No isoformat method for value')
 
     def to_element(self, **kwds):
-        if super(Choice, self).to_element(**kwds) is None:
+        if super(Date, self).to_element(**kwds) is None:
             return None
 
         elem = etree.Element(self.tag)
