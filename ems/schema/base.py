@@ -122,6 +122,37 @@ def parse_fields(name, bases, dct):
     dct['_field_lookup'] = field_lookup
 
 
+def webservice_meta(**kwds):
+    """
+    Class decorator for creating new web service objects.
+    Takes _META_ args as keyword arguments.
+    """
+    def wrapper(cls):
+        orig_vars = cls.__dict__.copy()
+        slots = orig_vars.get('__slots__')
+
+        if slots is not None:
+            if isinstance(slots, str):
+                slots = [slots]
+
+            for slots_var in slots:
+                orig_vars.pop(slots_var)
+
+        orig_vars.pop('__dict__', None)
+        orig_vars.pop('__weakref__', None)
+
+        if orig_vars.get('_META_', None) is None:
+            orig_vars['_META_'] = {}
+
+        if kwds is not None:
+            for k, v in six.iteritems(kwds):
+                orig_vars['_META_'][k] = v
+
+        return WebServiceMeta(cls.__name__, cls.__bases__, orig_vars)
+
+    return wrapper
+
+
 class WebServiceMeta(type):
     """
     Metaclass used to create new WebService objects from a schema, defined
@@ -225,6 +256,7 @@ class WebServiceObject(object):
 
         for elem in root_element:
             attr_name = cls._field_lookup.get(elem.tag, None)
+
             if attr_name is None and strict:
                 raise XMLException('Unexpected element: %s' % attr_name)
             elif attr_name is None:
