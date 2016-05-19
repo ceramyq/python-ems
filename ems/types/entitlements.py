@@ -20,10 +20,10 @@ from ems.schema import base
 from ems.schema import restrictions
 
 
-@six.add_metaclass(base.WebServiceMeta)
+@base.webservice_meta(tag='entitlement', omit_empty=True)
 class Entitlement(base.WebServiceObject):
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class CustomerIdentifier(base.WebServiceObject):
         _SCHEMA_ = {
             'id': {
@@ -38,11 +38,11 @@ class Entitlement(base.WebServiceObject):
             }
         }
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class ContactIdentifier(base.WebServiceObject):
         _SCHEMA_ = {
             'id': {
-                'tag': 'customerId',
+                'tag': 'contactId',
                 'type': 'int',
             },
             'email': {
@@ -50,7 +50,7 @@ class Entitlement(base.WebServiceObject):
             }
         }
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class ChannelPartnerIdentifier(base.WebServiceObject):
         _SCHEMA_ = {
             'id': {
@@ -62,7 +62,7 @@ class Entitlement(base.WebServiceObject):
             }
         }
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class CustomAttribute(base.WebServiceObject):
         _SCHEMA_ = {
             'name': {
@@ -74,7 +74,7 @@ class Entitlement(base.WebServiceObject):
             }
         }
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class TxnHistory(base.WebServiceObject):
         _SCHEMA_ = {
             'eid': {
@@ -95,13 +95,13 @@ class Entitlement(base.WebServiceObject):
             },
         }
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class ProductKey(base.WebServiceObject):
 
-        @six.add_metaclass(base.WebServiceMeta)
+        @base.webservice_meta(omit_empty=True)
         class ProductKeyItem(base.WebServiceObject):
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class EnforcementIdentifier(base.WebServiceObject):
                 # EnforcementIdentifier
                 _SCHEMA_ = {
@@ -110,14 +110,14 @@ class Entitlement(base.WebServiceObject):
                     },
                     'version': {
                         'tag': 'enforcementVersion',
-                        'type': 'float',
+                        'type': 'string',
                     }
                 }
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class SuiteIdentifier(base.WebServiceObject):
 
-                @six.add_metaclass(base.WebServiceMeta)
+                @base.webservice_meta(omit_empty=True)
                 class SuiteNameVersion(base.WebServiceObject):
                     # SuiteNameVersion
                     _SCHEMA_ = {
@@ -142,13 +142,13 @@ class Entitlement(base.WebServiceObject):
                     }
                 }
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class Product(base.WebServiceObject):
 
-                @six.add_metaclass(base.WebServiceMeta)
+                @base.webservice_meta(omit_empty=True)
                 class ProductIdentifier(base.WebServiceObject):
 
-                    @six.add_metaclass(base.WebServiceMeta)
+                    @base.webservice_meta(omit_empty=True)
                     class ProductNameVersion(base.WebServiceObject):
                         # ProductNameVersion
                         _SCHEMA_ = {
@@ -171,19 +171,19 @@ class Entitlement(base.WebServiceObject):
                             'type': 'int',
                         },
                         'name_version': {
-                            'tag': 'ProductNameVersion',
+                            'tag': 'productNameVersion',
                             'type': 'sequence',
                             'class': ProductNameVersion,
                         }
                     }
 
-                @six.add_metaclass(base.WebServiceMeta)
+                @base.webservice_meta(omit_empty=True)
                 class Feature(base.WebServiceObject):
 
-                    @six.add_metaclass(base.WebServiceMeta)
+                    @base.webservice_meta(omit_empty=True)
                     class FeatureIdentifier(base.WebServiceObject):
 
-                        @six.add_metaclass(base.WebServiceMeta)
+                        @base.webservice_meta(omit_empty=True)
                         class FeatureNameVersion(base.WebServiceObject):
                             # FeatureNameVersion
                             _SCHEMA_ = {
@@ -207,19 +207,19 @@ class Entitlement(base.WebServiceObject):
                             },
                             'identity': {
                                 'tag': 'featureIdentity',
-                                'type': 'int',
+                                'type': 'string',
                             },
                             'name_version': {
-                                'tag': 'FeatureNameVersion',
+                                'tag': 'ftrNameVersion',
                                 'type': 'sequence',
                                 'class': FeatureNameVersion,
                             }
                         }
 
-                    @six.add_metaclass(base.WebServiceMeta)
+                    @base.webservice_meta(omit_empty=True)
                     class LicenseModel(base.WebServiceObject):
 
-                        @six.add_metaclass(base.WebServiceMeta)
+                        @base.webservice_meta(omit_empty=True)
                         class LicenseModelIdentifier(base.WebServiceObject):
                             # LicenseModelIdentifier
                             _SCHEMA_ = {
@@ -232,7 +232,7 @@ class Entitlement(base.WebServiceObject):
                                 }
                             }
 
-                        @six.add_metaclass(base.WebServiceMeta)
+                        @base.webservice_meta(omit_empty=True)
                         class LicenseModelAttribute(base.WebServiceObject):
                             # LicenseModelAttribute
                             _SCHEMA_ = {
@@ -271,6 +271,11 @@ class Entitlement(base.WebServiceObject):
                             'tag': 'licenseModel',
                             'type': 'sequence',
                             'class': LicenseModel,
+                        },
+                        'item_feature_state': {
+                            'tag': 'itemFeatureState',
+                            # TODO(JG): should have enum restriction but
+                            # field is not in XSD
                         }
                     }
 
@@ -288,19 +293,19 @@ class Entitlement(base.WebServiceObject):
                     },
                 }
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class CommonLicenseAttributes(base.WebServiceObject):
 
-                @six.add_metaclass(base.WebServiceMeta)
+                @base.webservice_meta(omit_empty=True)
                 class Attribute(base.WebServiceObject):
                     # Attribute
                     _SCHEMA_ = {
                         'name': {
-                            'tag': 'attributeName',
+                            'tag': 'Name',
                             'required': True,
                         },
                         'value': {
-                            'tag': 'attributeValue',
+                            'tag': 'value',
                         }
                     }
 
@@ -313,28 +318,60 @@ class Entitlement(base.WebServiceObject):
                     }
                 }
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class ActivationAttributes(base.WebServiceObject):
+
+                @base.webservice_meta(omit_empty=True)
+                class AttributeGroup(base.WebServiceObject):
+
+                    @base.webservice_meta(omit_empty=True)
+                    class Attribute(base.WebServiceObject):
+                        # Attribute
+                        _SCHEMA_ = {
+                            'name': {
+                                'tag': 'attributeName',
+                            },
+                            'value': {
+                                'tag': 'attributeValue',
+                            },
+                            'read_only': {
+                                'tag': 'readOnly',
+                                'type': 'bool',
+                            },
+                            'mandatory': {
+                                'tag': 'mandatory',
+                                'type': 'bool',
+                            },
+                        }
+
+                    # AttributeGroup
+                    _SCHEMA_ = {
+                        'attribute': {
+                            'type': 'sequence',
+                            'tag': 'attribute',
+                            'class': Attribute,
+                        }
+                    }
+
                 # ActivationAttributes
                 _SCHEMA_ = {
-                    'name': {
-                        'tag': 'attributeName',
-
-                    }
+                    'group': {
+                        'type': 'sequence',
+                        'tag': 'attributeGroup',
+                        'class': AttributeGroup,
+                    },
                 }
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class EntitlementExtension(base.WebServiceObject):
                 # EntitlementExtension
                 _SCHEMA_ = {
-
                 }
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class CustomAttribute(base.WebServiceObject):
                 # CustomAttribute
                 _SCHEMA_ = {
-
                 }
 
             # ProductKeyItem
@@ -403,6 +440,9 @@ class Entitlement(base.WebServiceObject):
                     'tag': 'customAttribute',
                     'type': 'sequence',
                     'class': CustomAttribute,
+                },
+                'entitlement_item_attributes': {
+                    'tag': 'entitlementItemAttributes',
                 }
             }
 
@@ -426,13 +466,13 @@ class Entitlement(base.WebServiceObject):
             },
         }
 
-    @six.add_metaclass(base.WebServiceMeta)
+    @base.webservice_meta(omit_empty=True)
     class EntitlementAttributes(base.WebServiceObject):
 
-        @six.add_metaclass(base.WebServiceMeta)
+        @base.webservice_meta(omit_empty=True)
         class AttributeGroup(base.WebServiceObject):
 
-            @six.add_metaclass(base.WebServiceMeta)
+            @base.webservice_meta(omit_empty=True)
             class Attribute(base.WebServiceObject):
                 _SCHEMA_ = {
                     'name': {
@@ -467,11 +507,6 @@ class Entitlement(base.WebServiceObject):
                 'class': AttributeGroup,
             }
         }
-
-    _META_ = {
-        'tag': 'entitlement',
-        'omit_empty': True,
-    }
 
     _SCHEMA_ = {
         'external_id': {
@@ -569,7 +604,7 @@ class Entitlement(base.WebServiceObject):
             ]
         },
         'send_notification': {
-            'tag': 'sendNotification',
+            'tag': 'sendNotifcation',
             'type': 'bool',
         },
         'cc_email': {
