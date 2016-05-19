@@ -106,7 +106,12 @@ class Field(object):
                 return None
 
         element = etree.Element(self.tag)
-        element.text = six.text_type(self.value)
+
+        if self.value is not None:
+            element.text = six.text_type(self.value)
+        else:
+            element.text = None
+
         return element
 
     @abc.abstractmethod
@@ -128,6 +133,9 @@ class ComplexField(Field):
             raise SchemaException('Class attribute expected for complex field '
                                   '[%s (%s)]' %
                                   self.__class__.__name__, self.tag)
+
+        kwds['clazz'] = kwds['class']
+        del kwds['class']
 
         super(ComplexField, self).__init__(**kwds)
 
@@ -151,7 +159,10 @@ class String(Field):
         return super(String, self).to_element(**kwds)
 
     def parse(self, element):
-        pass
+        if isinstance(element.text, six.string_types):
+            self.value = six.text_type(element.text)
+        else:
+            self.value = element.text
 
 
 @field_type('int', 'integer')
@@ -169,7 +180,14 @@ class Integer(Field):
         return super(Integer, self).to_element(**kwds)
 
     def parse(self, element):
-        pass
+        if element.text is None:
+            self.value = None
+
+        else:
+            try:
+                self.value = int(element.text)
+            except ValueError as e:
+                raise XMLException(e.message)
 
 
 @field_type('float')
@@ -189,7 +207,14 @@ class Float(Field):
         return super(Float, self).to_element(**kwds)
 
     def parse(self, element):
-        pass
+        if element.text is None:
+            self.value = None
+
+        else:
+            try:
+                self.value = float(element.text)
+            except ValueError as e:
+                raise XMLException(e.message)
 
 
 @field_type('bool', 'bit', 'boolean')
@@ -212,7 +237,16 @@ class Boolean(Field):
         return elem
 
     def parse(self, element):
-        pass
+        if element.text is None:
+            self.value = None
+
+        elif element.text.lower() == 'true':
+            self.value = True
+        elif element.text.lower() == 'false':
+            self.value = False
+        else:
+            raise XMLException('%s cannot be converted to boolean type' %
+                               self.value)
 
 
 @field_type('date', 'datetime')
@@ -251,8 +285,17 @@ class Date(Field):
                 raise ValidationException('Cannot convert value %s to ISO '
                                           'datetime' % self.value)
 
+        return elem
+
     def parse(self, element):
-        pass
+        if element.text is None:
+            self.value = None
+
+        else:
+            try:
+                self.value = dateutil.parser.parse(element.text)
+            except ValueError as e:
+                raise XMLException(e.message)
 
 
 @field_type('choice')
@@ -282,7 +325,7 @@ class Choice(ComplexField):
         return elem
 
     def parse(self, element):
-        pass
+        self.value = self.clazz.parse(element)
 
 
 @field_type('sequence', 'list')
@@ -304,9 +347,11 @@ class Sequence(ComplexField):
                                               'elements in sequence' %
                                               self.min_occurs)
 
-                if len(self.value) > self.max_occurs:
-                    raise ValidationException('Field exceeds the maximum number'
-                                              ' of elements for the sequence')
+                if self.max_occurs is not None:
+                    if len(self.value) > self.max_occurs:
+                        raise ValidationException(
+                            'Field exceeds the maximum number of elements '
+                            'for the sequence')
 
                 [child.validate()
                  for child
@@ -339,4 +384,7 @@ class Sequence(ComplexField):
         return elements
 
     def parse(self, element):
-        pass
+        if self.value is None:
+            self.value = []
+
+        self.value.append(self.clazz.parse(element))
