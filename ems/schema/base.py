@@ -251,7 +251,7 @@ class WebServiceObject(object):
             attr_name = cls._field_lookup.get(elem.tag, None)
 
             if attr_name is None and strict:
-                raise XMLException('Unexpected element: %s' % attr_name)
+                raise XMLException('Unexpected element: %s' % elem.tag)
             elif attr_name is None:
                 continue
 
