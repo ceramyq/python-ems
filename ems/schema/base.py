@@ -47,9 +47,6 @@ def parse_meta(name, bases, dct):
 
         # Validation fails for Choice types with more than one value populated.
         'strict_choice': False,
-
-        # Fields are validated when they're set.
-        'eager_validation': False,
     }
 
     # Sets up defaults if the _META_ attribute is not found.
@@ -88,10 +85,6 @@ def parse_fields(name, bases, dct):
         # Tag name defaults to field name.
         if 'tag' not in v:
             v['tag'] = k
-
-        # The field needs to be aware if eager validation is set.
-        if 'eager_validation' not in v:
-            v['eager_validation'] = dct['_schema_meta']['eager_validation']
 
         # Get field class from factory helper method.
         schema_fields[k] = fields.factory(field_type, **v)
