@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
 import datetime
 
 import dateutil.parser
@@ -53,38 +52,156 @@ def factory(type_, **kwds):
     return field_classes[type_](**kwds)
 
 
-@six.add_metaclass(abc.ABCMeta)
 class Field(object):
     """
     Base abstract field class.
+
+    Subclasses must override the to_text and from_text methods to define how
+    their respective values must be converted to and from XML.
     """
     def __init__(self, **kwds):
+        # The default value of the field if it is not populated. There is no
+        # point using `required=True` or `min_occurs=1` with this.
         self.default = None
+
+        # The default tag is the name of the class which is probably never
+        # going to be useful...
         self.tag = self.__class__.__name__
+
+        # Fail validation if the field value is not populated.
         self.required = False
+
+        # Do not output <tagName /> if the field is None.
         self.omit_empty = False
+
+        # List of objs subclassing the base restriction type.
         self.restrictions = []
+
+        # Field must occur this many times.
+        self.min_occurs = 0
+
+        # If this is > 1 or None then it's a list.
+        self.max_occurs = 1
 
         for k, v in six.iteritems(kwds):
             self.__setattr__(k, v)
 
         self.value = self.default
 
+    def __str__(self):
+        return "[%(class_name)s (%(tag_name)s)]" % {
+            'class_name': self.__class__.__name__,
+            'tag_name': self.tag,
+        }
+
+    def __len__(self):
+        if self.value is None:
+            return 0
+        elif self.is_list():
+            return len(self.value)
+        else:
+            return 1
+
+    def to_text(self, value):
+        """
+        Converts the given value into a text type ready to be used in XML.
+        """
+        if value is None:
+            return None
+
+        return six.text_type(value)
+
+    def from_text(self, text):
+        """
+        Converts the text from an XML field into the proper type for this field.
+        """
+        if text is None:
+            return None
+
+        return six.text_type(text)
+
+    def is_list_type(self):
+        """
+        Returns whether this field should be processed as a list type.
+        """
+        return self.max_occurs is None or self.max_occurs > 1
+
+    def is_list(self):
+        """
+        Returns whether the value of this field is a list.
+        """
+        return isinstance(self.value, list)
+
+    def is_none(self):
+        """
+        Check whether the value of this field is None.
+        """
+        if self.value is None:
+            return True
+
+        if self.is_list() and all([i is None for i in self.value]):
+            return True
+
+        return False
+
+    def validate_one(self, value):
+        """
+        Validates a single element; used to validate each child for a list or
+        values for non-list fields.
+        """
+        # Validate restrictions
+        if self.restrictions is None or len(self.restrictions) == 0:
+            return
+
+        for restriction in self.restrictions:
+            if not six.callable(restriction):
+                raise SchemaException(
+                    'Restriction %s for field %s is not callable' %
+                    (restriction, self)
+                )
+
+            restriction(value)
+
+        self.from_text(self.to_text(value))
+
     def validate(self):
-        if self.value is None and self.required:
-            raise ValidationException('Required field [%s (%s)] cannot be None'
-                                      % self.__class__.__name__, self.tag)
+        """
+        Validates that a field's values are correct for the given schema of the
+        field.
 
-        if len(self.restrictions) > 0:
-            for restriction in self.restrictions:
-                if not six.callable(restriction):
-                    raise SchemaException(
-                        'Restriction [%s] for field [%s (%s)] is not callable'
-                        % restriction, self.__class__.__name__, self.tag)
+        Raises ValidationException if the field fails validation.
+        """
+        # If field is required. Populated lists require 1 non-None element.
+        if self.is_none() and self.required:
+            raise ValidationException("Field %s is required" % self)
 
-                restriction(self.value)
+        # Validate whether this should be a list, or otherwise
+        if self.is_list() and not self.is_list_type():
+            raise ValidationException(
+                "More than one value encountered for field %s which isn't a "
+                "list type" % self)
+
+        # Validate the occurs for values in the list and validate each element
+        if self.is_list():
+            if self.max_occurs and len(self) > self.max_occurs:
+                raise ValidationException(
+                    "Too many values for field: %s" % self)
+
+            if self.min_occurs and len(self) < self.min_occurs:
+                raise ValidationException(
+                    "Not enough values for field: %s" % self)
+
+            for val in self.value:
+                self.validate_one(val)
+
+        # If it's a single value, validate it as-is
+        else:
+            self.validate_one(self.value)
 
     def is_valid(self):
+        """
+        Convenience wrapper for the validate method to return a boolean value.
+        """
         try:
             self.validate()
         except ValidationException:
@@ -92,52 +209,150 @@ class Field(object):
 
         return True
 
-    @abc.abstractmethod
     def to_element(self, **kwds):
         """
         Returns the field object as an XML element (lxml.etree.Element).
         """
-        if self.omit_empty or kwds.get('omit_empty', False):
+        if self.value is None and (self.omit_empty or
+                                   kwds.get('omit_empty', False)):
+            return None
+
+        if self.is_list_type() and self.is_list():
+            elem_list = []
+
+            for value in self.value:
+                elem = etree.Element(self.tag)
+
+                if value is None:
+                    elem.text = None
+                else:
+                    elem.text = self.to_text(value)
+
+                elem_list.append(elem)
+
+            return elem_list
+
+        elif self.is_list_type():
+            elem = etree.Element(self.tag)
+
             if self.value is None:
-                return None
+                elem.text = None
+            else:
+                elem.text = self.to_text(self.value)
 
-        if getattr(self, 'omit_blank', False) or kwds.get('omit_blank', False):
-            if self.value == '':
-                return None
+            return [elem]
 
-        element = etree.Element(self.tag)
-
-        if self.value is not None:
-            element.text = six.text_type(self.value)
         else:
-            element.text = None
+            elem = etree.Element(self.tag)
 
-        return element
+            if self.value is None:
+                elem.text = None
+            else:
+                elem.text = self.to_text(self.value)
 
-    @abc.abstractmethod
+            return elem
+
     def parse(self, element):
         """
         Parse an lxml.etree element to populate the values of the field. Raises
         an XMLException if the XML is invalid for this field.
         """
-        pass
+        # The format of the value produced by parsing must be the result of the
+        # from_text method.
+        if element.text is None:
+            element_value = None
+        else:
+            try:
+                element_value = self.from_text(element.text)
+            except Exception as e:
+                raise XMLException(e.message)
+
+        if self.is_list_type():
+            if self.value is None:
+                self.value = [element_value]
+
+            elif isinstance(self.value, list):
+                self.value.append(element_value)
+
+            else:
+                self.value = [self.value, element_value]
+
+        else:
+            self.value = element_value
 
 
-@six.add_metaclass(abc.ABCMeta)
 class ComplexField(Field):
     """
-    Represent base complex type whereby a class is required.
+    Represent base complex type whereby a class is required
     """
     def __init__(self, **kwds):
-        if 'class' not in kwds:
-            raise SchemaException('Class attribute expected for complex field '
-                                  '[%s (%s)]' %
-                                  self.__class__.__name__, self.tag)
+        try:
+            self.clazz = kwds['class']
+        except KeyError:
+            raise SchemaException(
+                '[class] attribute required for complex field %s' % self)
 
-        kwds['clazz'] = kwds['class']
         del kwds['class']
 
         super(ComplexField, self).__init__(**kwds)
+
+    # Replaces the from_text on Field class
+    def from_single_element(self, element):
+        return self.clazz.parse(element)
+
+    # Replaces the to_text on Field class
+    def to_single_element(self, value):
+        root = etree.Element(self.tag)
+
+        if value is None:
+            root.text = None
+        else:
+            root = value.to_element(root_element=root)
+
+        return root
+
+    def to_element(self, **kwds):
+        """ """
+        if self.value is None and (self.omit_empty or
+                                   kwds.get('omit_empty', False)):
+            return None
+
+        if self.is_list_type() and self.is_list():
+            elem_list = []
+
+            for value in self.value:
+                elem = self.to_single_element(value)
+                elem_list.append(elem)
+
+            return elem_list
+
+        elif self.is_list_type():
+            elem = self.to_single_element(self.value)
+            return [elem]
+
+        else:
+            elem = self.to_single_element(self.value)
+            return elem
+
+    def parse(self, element):
+        """ """
+        try:
+            element_value = self.from_single_element(element)
+        except Exception as e:
+            raise XMLException(e.message)
+
+        if self.is_list_type():
+            if self.value is None:
+                self.value = [element_value]
+
+            elif isinstance(self.value, list):
+                self.value.append(element_value)
+
+            else:
+                self.value = [self.value, element_value]
+
+        else:
+            self.value = element_value
 
 
 @field_type('str', 'string')
@@ -149,45 +364,14 @@ class String(Field):
         self.omit_blank = False
         super(String, self).__init__(**kwds)
 
-    def validate(self):
-        super(String, self).validate()
-        if self.value is not None:
-            if not isinstance(self.value, six.string_types):
-                raise ValidationException('String field must a string type')
-
-    def to_element(self, **kwds):
-        return super(String, self).to_element(**kwds)
-
-    def parse(self, element):
-        if isinstance(element.text, six.string_types):
-            self.value = six.text_type(element.text)
-        else:
-            self.value = element.text
-
 
 @field_type('int', 'integer')
 class Integer(Field):
     """
     xs:integer XML type
     """
-    def validate(self):
-        super(Integer, self).validate()
-        if self.value is not None:
-            if not isinstance(self.value, int):
-                raise ValidationException('Integer field must be of type int')
-
-    def to_element(self, **kwds):
-        return super(Integer, self).to_element(**kwds)
-
-    def parse(self, element):
-        if element.text is None:
-            self.value = None
-
-        else:
-            try:
-                self.value = int(element.text)
-            except ValueError as e:
-                raise XMLException(e.message)
+    def from_text(self, text):
+        return int(value)
 
 
 @field_type('float')
@@ -195,26 +379,8 @@ class Float(Field):
     """
     xs:float XML type
     """
-    def validate(self):
-        super(Float, self).validate()
-        if self.value is not None:
-            if (not isinstance(self.value, float) and
-                    not isinstance(self.value, int)):
-                raise ValidationException('Float field must be either of type '
-                                          'int or float')
-
-    def to_element(self, **kwds):
-        return super(Float, self).to_element(**kwds)
-
-    def parse(self, element):
-        if element.text is None:
-            self.value = None
-
-        else:
-            try:
-                self.value = float(element.text)
-            except ValueError as e:
-                raise XMLException(e.message)
+    def from_text(self, text):
+        return float(text)
 
 
 @field_type('bool', 'bit', 'boolean')
@@ -222,31 +388,22 @@ class Boolean(Field):
     """
     xs:boolean XML type
     """
-    def validate(self):
-        super(Boolean, self).validate()
-        if self.value is not None:
-            if not isinstance(self.value, bool):
-                raise ValidationException('Boolean field must be of type bool')
-
-    def to_element(self, **kwds):
-        elem = super(Boolean, self).to_element(**kwds)
-        if elem is None:
+    def to_text(self, value):
+        if value is None:
             return None
 
-        elem.text = elem.text.lower()
-        return elem
+        # Force bool to lowercase
+        return super(Boolean, self).to_text(value).lower()
 
-    def parse(self, element):
-        if element.text is None:
-            self.value = None
-
-        elif element.text.lower() == 'true':
-            self.value = True
-        elif element.text.lower() == 'false':
-            self.value = False
+    def from_text(self, text):
+        if text.lower() == 'true':
+            return True
+        elif text.lower() == 'false':
+            return False
         else:
-            raise XMLException('%s cannot be converted to boolean type' %
-                               self.value)
+            return XMLException(
+                '%s cannot be converted to boolean type' % text
+            )
 
 
 @field_type('date', 'datetime')
@@ -254,48 +411,24 @@ class Date(Field):
     """
     xs:date XML type
     """
-    def validate(self):
-        super(Date, self).validate()
-        if self.value is not None:
-            if isinstance(self.value, str):
-                try:
-                    dateutil.parser.parse(self.value)
-                except ValueError:
-                    raise ValidationException('Cannot parse value as ISO date')
+    def to_text(self, value):
+        if isinstance(value, six.string_types):
+            value = self.from_text(value)
 
-            else:
-                formatter = getattr(self.value, 'isoformat', None)
-                if not six.callable(formatter):
-                    raise ValidationException('No isoformat method for value')
+        formatter = getattr(self.value, 'isoformat', None)
 
-    def to_element(self, **kwds):
-        if super(Date, self).to_element(**kwds) is None:
-            return None
-
-        elem = etree.Element(self.tag)
-        if isinstance(self.value, six.string_types):
-            elem.text = self.value
-        elif self.value is None:
-            elem.text = None
-        else:
-            to_iso = getattr(self.value, 'isoformat', None)
-            if to_iso is not None and six.callable(to_iso):
-                elem.text = self.value.isoformat()
-            else:
-                raise ValidationException('Cannot convert value %s to ISO '
-                                          'datetime' % self.value)
-
-        return elem
-
-    def parse(self, element):
-        if element.text is None:
-            self.value = None
+        if formatter is not None and six.callable(formatter):
+            return value.isoformat()
 
         else:
-            try:
-                self.value = dateutil.parser.parse(element.text)
-            except ValueError as e:
-                raise XMLException(e.message)
+            raise ValidationException(
+                'Cannot convert value %s to ISO datetime' % value)
+
+    def from_text(self, text):
+        try:
+            return dateutil.parser.parse(text)
+        except ValueError as e:
+            raise XMLException(e.message)
 
 
 @field_type('choice')
@@ -304,28 +437,28 @@ class Choice(ComplexField):
     complex XML type xs:choice
     """
     def __init__(self, **kwds):
-        self.strict = False
         super(Choice, self).__init__(**kwds)
+        self.strict = kwds.get('strict', False)
 
-    def validate(self):
-        super(Choice, self).validate()
-        if self.value is not None:
-            self.value.validate()
+    def validate_one(self, value):
+        super(Choice, self).validate_one(value)
 
-    def to_element(self, **kwds):
-        if super(Choice, self).to_element(**kwds) is None:
-            return None
+        if value is None:
+            return
 
-        elem = etree.Element(self.tag)
-        if self.value is None:
-            elem.text = None
-        else:
-            self.value.to_element(root_element=elem)
+        value.validate()
 
-        return elem
+        if self.strict:
+            # Count the number of fields which aren't none
+            populated_fields = [
+                f.is_none() for f
+                in six.itervalues(value._schema_fields)
+            ].count(False)
 
-    def parse(self, element):
-        self.value = self.clazz.parse(element)
+            if populated_fields > 1:
+                raise ValidationException(
+                    'Multiple fields populated for choice field, '
+                    'using strict validation')
 
 
 @field_type('sequence', 'list')
@@ -334,57 +467,6 @@ class Sequence(ComplexField):
     complex XML type xs:sequence
     """
     def __init__(self, **kwds):
-        self.min_occurs = 0
-        self.max_occurs = None
         super(Sequence, self).__init__(**kwds)
-
-    def validate(self):
-        super(Sequence, self).validate()
-        if self.value is not None:
-            if isinstance(self.value, list):
-                if len(self.value) < self.min_occurs:
-                    raise ValidationException('Field must have at least %d '
-                                              'elements in sequence' %
-                                              self.min_occurs)
-
-                if self.max_occurs is not None:
-                    if len(self.value) > self.max_occurs:
-                        raise ValidationException(
-                            'Field exceeds the maximum number of elements '
-                            'for the sequence')
-
-                [child.validate()
-                 for child
-                 in self.value]
-            else:
-                self.value.validate()
-
-    def to_element(self, **kwds):
-        if super(Sequence, self).to_element(**kwds) is None:
-            return None
-
-        elements = []
-
-        if isinstance(self.value, list):
-            for child in self.value:
-                elem = etree.Element(self.tag)
-                child.to_element(root_element=elem)
-                elements.append(elem)
-
-        elif self.value is None:
-            elem = etree.Element(self.tag)
-            elem.text = None
-            elements.append(elem)
-
-        else:
-            elem = etree.Element(self.tag)
-            self.value.to_element(root_element=elem)
-            elements.append(elem)
-
-        return elements
-
-    def parse(self, element):
-        if self.value is None:
-            self.value = []
-
-        self.value.append(self.clazz.parse(element))
+        self.max_occurs = kwds.get('max_occurs', None)
+        self.min_occurs = kwds.get('min_occurs', 0)
