@@ -262,6 +262,9 @@ class WebServiceObject(object):
 
     @classmethod
     def from_file(cls, filename, strict=True):
+        """
+        Parse an XML from a file.
+        """
         tree = etree.parse(filename)
         root = tree.getroot()
 
