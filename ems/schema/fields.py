@@ -371,7 +371,7 @@ class Integer(Field):
     xs:integer XML type
     """
     def from_text(self, text):
-        return int(value)
+        return int(text)
 
 
 @field_type('float')
