@@ -269,3 +269,11 @@ class WebServiceObject(object):
         root = tree.getroot()
 
         return cls.parse(root, strict=strict)
+
+    @classmethod
+    def from_text(cls, text, strict=True):
+        """
+        Parse an XML from a string.
+        """
+        bytes_ = six.BytesIO(text.encode('utf-8'))
+        return cls.from_file(bytes_)
