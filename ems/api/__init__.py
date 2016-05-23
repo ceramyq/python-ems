@@ -36,6 +36,10 @@ DEFAULT_HEADERS = {
 API_BROKER = None
 
 
+def get_instance(*args, **kwds):
+    return ApiBroker.get_instance(*args, **kwds)
+
+
 class ApiBroker(object):
 
     def __init__(self, url, username, password):
@@ -245,7 +249,7 @@ class ApiResourceMeta(type):
 
 
 @six.add_metaclass(ApiResourceMeta)
-class Contact(object):
+class Contacts(object):
 
     _API_SCHEMA_ = {
         'create_contact': {
@@ -420,8 +424,8 @@ class Contact(object):
                     'param': 'customerId',
                     'type': 'int',
                 },
-                'name': {
-                    'param': 'customerName',
+                'email': {
+                    'param': 'emailId',
                 },
                 'page_index': {
                     'param': 'pageIndex',
@@ -464,7 +468,7 @@ class Contact(object):
 
 
 @six.add_metaclass(ApiResourceMeta)
-class Customer(object):
+class Customers(object):
 
     _API_SCHEMA_ = {
         'create_customer': {
