@@ -22,7 +22,7 @@ from ems.schema import fields
 
 UpdateContactResponse = types.StatusResponse
 
-DeleteContactResposne = types.StatusResponse
+DeleteContactResponse = types.StatusResponse
 
 AssociateContactResponse = types.StatusResponse
 
@@ -78,6 +78,7 @@ class ContactDetailsResponse(base.WebServiceObject):
         },
         'id': {
             'tag': 'contactId',
+            'type': 'int',
         },
         'name': {
             'tag': 'contactName',
@@ -163,14 +164,25 @@ class SearchContactsResponse(base.WebServiceObject):
                     'tag': 'contNumber',
                 },
                 'id': {
-                    'tag': 'contactId',
+                    'tag': 'contactid',
                     'type': 'int',
                 },
+                'customer_id': {
+                    'tag': 'customerId',
+                    'type': 'int',
+                },
+                'customer_name': {
+                    'tag': 'customername',
+                },
                 'name': {
-                    'tag': 'contactName',
+                    'tag': 'contactname',
                 },
                 'email': {
-                    'tag': 'emailId',
+                    'tag': 'emailid',
+                },
+                'create_date': {
+                    'tag': 'createDate',
+                    'type': 'date',
                 },
                 'entitlement_count': {
                     'tag': 'entitlementCount',
