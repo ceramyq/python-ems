@@ -17,7 +17,6 @@
 
 from ems import types
 from ems.schema import base
-from ems.schema import fields
 
 
 UpdateCustomerResponse = types.StatusResponse
