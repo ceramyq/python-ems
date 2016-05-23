@@ -54,4 +54,6 @@ class EMSAPIException(EMSException):
     """
     Exceptions pertaining to the Sentinel EMS API.
     """
-    pass
+    def __init__(self, ems_error):
+        self.code = ems_error.code
+        super(EMSException, self).__init__(ems_error.description)
