@@ -18,10 +18,13 @@
 import requests
 import six
 
+from ems.types import contacts
+from ems.types import customers
 from ems.types import errors
 
 from ems.exceptions import EMSAPIException
 from ems.exceptions import ValidationException
+from ems.exceptions import XMLException
 
 
 # Headers to always be added to API requests to Safenet EMS
@@ -204,10 +207,12 @@ class ApiCall(object):
         # TODO handle response code not in ok codes
         try:
             ret = self.returns.from_text(response.text)
-        except Exception as e:
+        except XMLException as e:
             # TODO handle exception
-            # raise e
-            ret = self.err_returns.from_text(response.text)
+            try:
+                ret = self.err_returns.from_text(response.text)
+            except Exception:
+                raise e
 
         if isinstance(ret, self.err_returns):
             raise EMSAPIException(ret)
@@ -237,3 +242,355 @@ class ApiResourceMeta(type):
         del dct['_API_SCHEMA_']
 
         return super(ApiResourceMeta, meta).__new__(meta, name, bases, dct)
+
+
+@six.add_metaclass(ApiResourceMeta)
+class Contact(object):
+
+    _API_SCHEMA_ = {
+        'create_contact': {
+            'path': 'createContact.xml',
+            'method': 'POST',
+            'returns': contacts.CreateContactResponse,
+            'params': {
+                'locale_id': {
+                    'param': 'localeId',
+                    'type': 'int',
+                },
+                'email': {
+                    'param': 'emailId',
+                    'required': True,
+                },
+                'name': {
+                    'param': 'contactName',
+                },
+                'number': {
+                    'param': 'contactNumber',
+                },
+                'login_allowed': {
+                    'param': 'loginAllowed',
+                },
+                'password': {
+                    'param': 'contactPassword',
+                },
+                'customer_id': {
+                    'param': 'customerId',
+                    'type': 'int',
+                },
+                'shipping_address': {
+                    'param': 'shipAddr',
+                },
+                'shipping_address_city': {
+                    'param': 'shipAddrCity',
+                },
+                'shipping_address_country': {
+                    'param': 'shipAddrCountry',
+                },
+                'shipping_address_state': {
+                    'param': 'shipAddrState',
+                },
+                'shipping_address_zip': {
+                    'param': 'shipAddrZip',
+                },
+                'billing_address': {
+                    'param': 'billAddr',
+                },
+                'billing_address_city': {
+                    'param': 'billAddrCity',
+                },
+                'billing_address_country': {
+                    'param': 'billAddrCountry',
+                },
+                'billing_address_zip': {
+                    'param': 'billAddrZip',
+                },
+                'ref1': {
+                    'param': 'refId1',
+                },
+                'ref2': {
+                    'param': 'refId2',
+                },
+            }
+        },
+        'retrieve_contact_by_id': {
+            'path': 'getContactById.xml',
+            'method': 'GET',
+            'returns': contacts.ContactDetailsResponse,
+            'params': {
+                'id': {
+                    'param': 'contactId',
+                    'type': 'int',
+                    'required': True,
+                }
+            }
+        },
+        'retrieve_contact_by_email': {
+            'path': 'getContactByEmailId.xml',
+            'method': 'GET',
+            'returns': contacts.ContactDetailsResponse,
+            'params': {
+                'email': {
+                    'param': 'emailId',
+                    'required': True,
+                }
+            }
+        },
+        'update_contact': {
+            'path': 'updateContact.xml',
+            'method': 'POST',
+            'returns': contacts.UpdateContactResponse,
+            'params': {
+                'id': {
+                    'param': 'contactId',
+                    'type': 'int',
+                    'required': True,
+                },
+                'email': {
+                    'param': 'emailId',
+                },
+                'name': {
+                    'param': 'contactName',
+                },
+                'number': {
+                    'param': 'contactNumber',
+                },
+                'login_allowed': {
+                    'param': 'loginAllowed',
+                },
+                'shipping_address': {
+                    'param': 'shipAddr',
+                },
+                'shipping_address_city': {
+                    'param': 'shipAddrCity',
+                },
+                'shipping_address_country': {
+                    'param': 'shipAddrCountry',
+                },
+                'shipping_address_state': {
+                    'param': 'shipAddrState',
+                },
+                'shipping_address_zip': {
+                    'param': 'shipAddrZip',
+                },
+                'billing_address': {
+                    'param': 'billAddr',
+                },
+                'billing_address_city': {
+                    'param': 'billAddrCity',
+                },
+                'billing_address_country': {
+                    'param': 'billAddrCountry',
+                },
+                'billing_address_state': {
+                    'param': 'billAddrState',
+                },
+                'billing_address_zip': {
+                    'param': 'billAddrZip',
+                },
+                'ref1': {
+                    'param': 'refId1',
+                },
+                'ref2': {
+                    'param': 'refId2',
+                },
+                'locale_id': {
+                    'param': 'localeId',
+                    'type': 'int',
+                },
+            }
+        },
+        'delete_contact': {
+            'path': 'deleteContact.xml',
+            'method': 'GET',
+            'returns': contacts.DeleteContactResponse,
+            'params': {
+                'id': {
+                    'param': 'contactId',
+                    'required': True,
+                    'type': 'int',
+                }
+            }
+        },
+        'search_contacts': {
+            'path': 'searchContacts.xml',
+            'method': 'GET',
+            'returns': contacts.SearchContactsResponse,
+            'params': {
+                'customer_id': {
+                    'param': 'customerId',
+                    'type': 'int',
+                },
+                'name': {
+                    'param': 'customerName',
+                },
+                'page_index': {
+                    'param': 'pageIndex',
+                    'type': 'int',
+                },
+                'page_size': {
+                    'param': 'pageSize',
+                    'type': 'int',
+                },
+                'sort_col': {
+                    'param': 'sortCol',
+                },
+                'sort_order': {
+                    'param': 'sortOrder',
+                },
+                'ref1': {
+                    'param': 'refId1',
+                },
+                'ref2': {
+                    'param': 'refId2',
+                },
+            }
+        },
+        'associate_contact': {
+            'path': 'associateContactWithCustomer.xml',
+            'method': 'POST',
+            'returns': contacts.AssociateContactResponse,
+            'params': {
+                'id': {
+                    'param': 'contactId',
+                    'type': 'int',
+                },
+                'customer_id': {
+                    'param': 'customerId',
+                    'type': 'int',
+                }
+            }
+        },
+    }
+
+
+@six.add_metaclass(ApiResourceMeta)
+class Customer(object):
+
+    _API_SCHEMA_ = {
+        'create_customer': {
+            'path': 'createCustomer.xml',
+            'method': 'POST',
+            'returns': customers.CreateCustomerResponse,
+            'params': {
+                'name': {
+                    'param': 'customerName',
+                    'required': True,
+                },
+                'enabled': {
+                    'param': 'isEnabled',
+                    'type': 'bool',
+                },
+                'crm_id': {
+                    'param': 'crmId',
+                },
+                'ref': {
+                    'param': 'refId',
+                },
+                'identifier': {
+                    'param': 'custIdentifier',
+                },
+                'description': {
+                    'param': 'description',
+                }
+            },
+        },
+        'retrieve_customer_by_id': {
+            'path': 'getCustomerById.xml',
+            'method': 'GET',
+            'returns': customers.CustomerDetailsResponse,
+            'params': {
+                'id': {
+                    'param': 'customerId',
+                    'required': True,
+                    'type': 'int',
+                }
+            }
+        },
+        'retrieve_customer_by_name': {
+            'path': 'getCustomerByName.xml',
+            'method': 'GET',
+            'returns': customers.CustomerDetailsResponse,
+            'params': {
+                'name': {
+                    'param': 'customerName',
+                    'required': True,
+                }
+            }
+        },
+        'update_customer': {
+            'path': 'updateCustomer.xml',
+            'method': 'POST',
+            'returns': customers.UpdateCustomerResponse,
+            'params': {
+                'id': {
+                    'param': 'customerId',
+                    'type': 'int',
+                    'required': True,
+                },
+                'name': {
+                    'param': 'customerName',
+                },
+                'enabled': {
+                    'param': 'isEnabled',
+                    'type': 'bool',
+                },
+                'crm_id': {
+                    'param': 'crmId',
+                },
+                'identifier': {
+                    'param': 'custIdentifier',
+                },
+                'ref': {
+                    'param': 'refId',
+                },
+                'description': {
+                    'param': 'description',
+                }
+            }
+        },
+        'delete_customer': {
+            'path': 'deleteCustomerById.xml',
+            'method': 'POST',
+            'returns': customers.DeleteCustomerResponse,
+            'params': {
+                'id': {
+                    'param': 'customerId',
+                    'type': 'int',
+                    'required': True,
+                },
+            }
+        },
+        'search_customers': {
+            'path': 'searchCustomers.xml',
+            'method': 'GET',
+            'returns': customers.SearchCustomersResponse,
+            'params': {
+                'name': {
+                    'param': 'customerName',
+                },
+                'crm_id': {
+                    'param': 'crmId',
+                },
+                'ref': {
+                    'param': 'refId',
+                },
+                'page_index': {
+                    'param': 'pageIndex',
+                    'type': 'int',
+                },
+                'page_size': {
+                    'param': 'pageSize',
+                    'type': 'int,'
+                },
+                'sort_col': {
+                    'param': 'sortCol',
+                },
+                'sort_order': {
+                    'param': 'sortOrder',
+                },
+                'pattern': {
+                    'param': 'searchPattern',
+                }
+            }
+        }
+    }
