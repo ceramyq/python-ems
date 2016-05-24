@@ -114,7 +114,11 @@ class ApiBroker(object):
 
 
 class ApiCall(object):
-
+    """
+    A class (acting as a method) which takes the schema for an API call to
+    provide a __call__ method which will take the necessary parameters and
+    return the appropriate object.
+    """
     def __init__(self, **kwds):
         # Parameters which may be sent to the resource
         self.params = kwds.get('params', None)
@@ -224,6 +228,9 @@ class ApiCall(object):
         return ret
 
     def marshal_params(self):
+        """
+        Parses the parameters for the call.
+        """
         if self.params is not None:
             for k, v in six.iteritems(self.params):
                 if v.get('required', False):
@@ -237,7 +244,10 @@ class ApiCall(object):
 
 
 class ApiResourceMeta(type):
-
+    """
+    Metaclass for API resources, reading the _API_SCHEMA_ attribute and creating
+    methods appropriately.
+    """
     def __new__(meta, name, bases, dct):
         if '_API_SCHEMA_' in dct:
             for key, val in six.iteritems(dct['_API_SCHEMA_']):
