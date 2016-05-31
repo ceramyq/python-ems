@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 
 from ems.schema import base
 from ems.schema import restrictions
@@ -635,3 +636,44 @@ class Entitlement(base.WebServiceObject):
             'class': EntitlementAttributes,
         },
     }
+
+    @classmethod
+    def create(cls, start_date, end_date, num_activations, products,
+               customer_id, contact_id, cc_email=None, ref1=None, ref2=None,
+               user_registration='OPTIONAL', send_notification=True,
+               type_='PARENT', as_whole=False):
+
+        ent = cls()
+        ent.start_date = start_date
+        ent.end_date = end_date
+        ent.ref1 = ref1
+        ent.ref2 = ref2
+        ent.send_notification = send_notification
+        ent.cc_email = cc_email
+        ent.type = type_
+        ent.as_whole = as_whole
+        ent.lifecycle_stage = 'DRAFT'
+        ent.customer_identifier = ent.CustomerIdentifier(id=customer_id)
+        ent.contact_identifier = ent.ContactIdentifier(id=contact_id)
+        ent.user_registration = user_registration
+
+        product_keys = []
+        for name, ver in six.iteritems(products):
+            key = ent.ProductKey(start_date=start_date, end_date=end_date)
+            item = key.ProductKeyItem()
+            item.total_quantity = num_activations
+            item.available_quantity = num_activations
+            item.activation_method = 'PARTIAL'
+
+            product = item.Product()
+            identifier = product.ProductIdentifier()
+            name_ver = identifier.ProductNameVersion(name=name, version=ver)
+
+            identifier.name_version = name_ver
+            product.identifier = identifier
+            item.product = product
+            key.item = item
+            product_keys.append(key)
+
+        ent.product_key = product_keys
+        return ent
