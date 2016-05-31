@@ -59,7 +59,7 @@ class EMSAPIException(EMSException):
         self.description = ems_error.description
 
         message = "[%d] %s" % (ems_error.code, ems_error.description)
-        super(EMSException, self).__init__(ems_error.message)
+        super(EMSException, self).__init__(message)
 
 
 api_exceptions = {}
