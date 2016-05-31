@@ -415,7 +415,7 @@ class Date(Field):
         if isinstance(value, six.string_types):
             value = self.from_text(value)
 
-        formatter = getattr(self.value, 'isoformat', None)
+        formatter = getattr(value, 'isoformat', None)
 
         if formatter is not None and six.callable(formatter):
             return value.isoformat()
