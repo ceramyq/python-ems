@@ -178,7 +178,7 @@ class WebServiceObject(object):
                 self._schema_fields[k].value = v
             else:
                 raise TypeError('%s got unexpected keyword argument %s' %
-                                self.__class__.__name__, k)
+                                (self.__class__.__name__, k))
 
     def validate(self):
         """
