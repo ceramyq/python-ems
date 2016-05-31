@@ -1,0 +1,55 @@
+CHANGES
+=======
+
+* Freeze requirements. Needs cleanup
+* Move API to top level
+* Add login types
+* Add helper function for creating entitlement objects
+* Fix exception text for restrictions
+* Fix validation for date fields
+* Fix bug in formatting
+* Allow to create api exception from tuple
+* Fix bug in messages
+* UTF8 coding source
+* Remove reference to rst readme
+* Move api to single file
+* Fix fields
+* Moved api classes into __init__
+* Customers API
+* Parse text XML
+* API exception wrapper
+* API libs
+* Contacts API
+* Remove unused import
+* Add login types
+* Add user types
+* Add error types
+* Fix bad variable name
+* Make exception message a bit more helpful
+* Add old customers xml schemas
+* Add old contacts XML schemas
+* Add generic type
+* Modifications to allow all fields to be repeated
+* Added comments
+* Remove eager validation
+* Remove unneeded dependency, six
+* Add api dir
+* Add parsing methods to field types
+* Utilise new decorator, omit empty fields and add parsing
+* Add class decorator for defining web service objects
+* Fix parse method signatures
+* Add initial implementation of XML->object to schema
+* Initial type implementation for Entitlements
+* Add restriction classes
+* Add Restriction exception
+* Fix bad classname in super call
+* Fix values and element name in schema base
+* Empty types directory
+* Initial schema implementation
+* Initial schema dir
+* Base exception classes
+* Add pbr versioning
+* Add base source folder
+* Add setup
+* Initial Commit
+* Initial commit
