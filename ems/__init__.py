@@ -252,7 +252,6 @@ class ApiSession(object):
             contactPassword=password, refId1=ref1, refId2=ref2
         )
 
-
     def update_contact(self, id, email, name=None, number=None,
                        login_allowed=True, locale=None, ref1=None, ref2=None):
 
