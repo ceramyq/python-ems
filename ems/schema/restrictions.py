@@ -45,4 +45,4 @@ class EnumRestriction(FieldRestriction):
     def __call__(self, value):
         if value not in self.allowed_values and value is not None:
             raise RestrictionException('Value %s is not allowed for field' %
-                                       element_value)
+                                       value)
