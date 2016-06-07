@@ -483,6 +483,7 @@ class ApiSession(object):
             raise exc.api_exception_factory(err_obj)
 
         ent_id = response.headers.get('Location', None)
+
         ent = self.get_entitlement(ent_id)
 
         ent.action = 'COMMIT'
@@ -500,7 +501,7 @@ class ApiSession(object):
                                 if f.name == 'END_DATE':
                                     f.value = end_date
 
-        return self.update_entitlement(ent)
+        return self.update_entitlement(ent_id, ent)
 
     def get_entitlement(self, entitlement_id, is_eid=False):
         params = {}
@@ -531,18 +532,24 @@ class ApiSession(object):
 
         return response.text
 
-    def update_entitlement(self, entitlement):
+    def update_entitlement(self, ent_id, entitlement):
+
+        # Fix ridiculous error from EMS
+        if entitlement.cc_email is None:
+            entitlement.cc_email = ''
 
         response = self.session.request(
-            url=self.new_url('v4_0/ws/entitlement.ws'),
-            method='PUT',
+            url=self.new_url('v4_0/ws/entitlement/%s.ws' % ent_id),
+            method='POST',
             data=entitlement.render(),
         )
 
-        if response.status_code != 201:
+        if response.status_code == 200:
+            return entitlements.Entitlement.from_text(response.text)
+
+        else:
             err_code = response.headers.get('errorCode', None)
             err = response.text
-
             err_obj = errors.ErrorResponse(
                 code=err_code,
                 description=err,
@@ -551,5 +558,4 @@ class ApiSession(object):
 
             raise exc.api_exception_factory(err_obj)
 
-        ent_id = response.headers.get('Location', None)
-        return self.get_entitlement(ent_id)
+        return response.text
